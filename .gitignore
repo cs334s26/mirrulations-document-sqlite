@@ -1,0 +1,8 @@
+.DS_Store
+__pycache__
+data/
+documents.db
+old/
+null_field_report.txt
+*.sql-shm
+*.sql-wal
