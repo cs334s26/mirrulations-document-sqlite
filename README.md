@@ -46,11 +46,11 @@ python3 insert_documents.py
 ## 42 CFR Part Analysis
 
 "Public Health" is [Title 42 of the Code of Federal Regulations](https://www.ecfr.gov/current/title-42).  The script `count_42_cfr_parts.py`
-queries the `documents.db` for all documents where the document type is "Rule" and the CFR Part number is for title 42.  The query
+queries the `documents.db` for all **documents** where the `document_type` is "Rule" and the `cfr_part` contains a number related to title 42.  The query
 provides the docket ID and the CFR Part string for all documents that match, and the script processes the CFR Part string to extract all part numbers.
 The result is a table with Part Number, Count, and a list of Agencies (with counts) that mention this part number.
 
-NOTE:  The cfr_part field is messy.  This script was a quick-and-dirty analysis using regular expressions.  It simply matches numbers, and it won't 
+NOTE:  The `cfr_part` field is messy.  This script was a quick-and-dirty analysis using regular expressions.  It simply matches numbers, and it won't 
 handle ranges (e.g. 410-415) or other text that infers parts.
 
 A sample run of this script produced:
@@ -77,3 +77,9 @@ Part            Count  Agencies
 488                43  CMS(41) HHS(2)
 489                43  CMS(43)
 ```
+
+## 42 CFR 412 Dockets
+
+The Script `list_42_cfr_412_dockets.py` finds all dockets that contain a document that have `document_type` of "Rule" and at least one document
+with `cfr_part` referring to title 42 part 412.  It puts these in order based on the `modified_date`, and it outputs the docket ID, the 
+modified date, and the title.
