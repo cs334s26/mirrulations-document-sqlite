@@ -7,46 +7,14 @@ extracts part numbers from the cfr_part text (handling variations like
 "42 CFR Part 405" or "42 CFR Parts 405, 417, 422, and 460"), and reports
 counts in decreasing order with per-agency breakdown (e.g. CMS(150) CDC(32)).
 """
-import re
 import sqlite3
 import sys
 from pathlib import Path
 from collections import Counter
 
+from cfr_part_normalization import extract_parts_for_title
+
 DB_PATH = Path(__file__).resolve().parent / "documents.db"
-
-# Match "Part" or "Parts" followed by numbers, commas, "and", spaces, decimals.
-# We split by "42 CFR" first so we only capture parts in the 42 CFR context.
-PART_PATTERN = re.compile(r"\bPart(?:s)?\s+([\d\s, and.]+)", re.IGNORECASE)
-NUMBER_PATTERN = re.compile(r"\d+(?:\.\d+)?")
-
-
-def extract_part_numbers(cfr_part: str | None) -> list[str]:
-    """
-    Extract 42 CFR part numbers from a cfr_part string.
-
-    Handles formats like:
-    - "42 CFR Part 405"
-    - "42 CFR Parts 405, 417, 422, and 460"
-    - "42 CFR Part 405; 42 CFR Part 422"
-    - Other human-written variations
-    """
-    if not cfr_part or not isinstance(cfr_part, str):
-        return []
-
-    parts: list[str] = []
-    # Split by "42 CFR" so we only capture part numbers in the 42 CFR context,
-    # avoiding false positives from "42" in "42 CFR" or other CFR titles.
-    segments = re.split(r"42\s+CFR", cfr_part, flags=re.IGNORECASE)
-
-    for segment in segments[1:]:  # Skip the part before first "42 CFR"
-        for match in PART_PATTERN.finditer(segment):
-            group = match.group(1)
-            # Extract all numbers from the captured group (e.g. "405, 417, 422, and 460")
-            numbers = NUMBER_PATTERN.findall(group)
-            parts.extend(numbers)
-
-    return parts
 
 
 def main() -> None:
@@ -73,7 +41,7 @@ def main() -> None:
     for row in cursor:
         agency_id = row["agency_id"] or "unknown"
         cfr_part = row["cfr_part"]
-        part_numbers = extract_part_numbers(cfr_part)
+        part_numbers = extract_parts_for_title(cfr_part, 42)
         for p in part_numbers:
             if p not in part_agencies:
                 part_agencies[p] = Counter()

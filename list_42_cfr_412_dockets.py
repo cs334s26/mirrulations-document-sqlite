@@ -5,29 +5,13 @@ sorted by modify_date (newest first).
 
 Prints docket_id, document title, and modify_date.
 """
-import re
 import sqlite3
 import sys
 from pathlib import Path
 
+from cfr_part_normalization import extract_parts_for_title
+
 DB_PATH = Path(__file__).resolve().parent / "documents.db"
-
-PART_PATTERN = re.compile(r"\bPart(?:s)?\s+([\d\s, and.]+)", re.IGNORECASE)
-NUMBER_PATTERN = re.compile(r"\d+(?:\.\d+)?")
-
-
-def extract_part_numbers(cfr_part: str | None) -> list[str]:
-    """Extract 42 CFR part numbers from a cfr_part string."""
-    if not cfr_part or not isinstance(cfr_part, str):
-        return []
-
-    parts: list[str] = []
-    segments = re.split(r"42\s+CFR", cfr_part, flags=re.IGNORECASE)
-    for segment in segments[1:]:
-        for match in PART_PATTERN.finditer(segment):
-            numbers = NUMBER_PATTERN.findall(match.group(1))
-            parts.extend(numbers)
-    return parts
 
 
 def main() -> None:
@@ -51,7 +35,7 @@ def main() -> None:
     # Deduplicate by docket_id: keep the row with the earliest modify_date per docket
     docket_best: dict[str, tuple[str, str | None]] = {}  # docket_id -> (title, modify_date)
     for row in cursor:
-        part_numbers = extract_part_numbers(row["cfr_part"])
+        part_numbers = extract_parts_for_title(row["cfr_part"], 42)
         if "412" not in part_numbers:
             continue
 
