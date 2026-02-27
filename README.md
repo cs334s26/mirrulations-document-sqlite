@@ -137,3 +137,11 @@ Part            Count  Agencies
 The Script `list_42_cfr_412_dockets.py` finds all dockets that contain a document that have `document_type` of "Rule" and at least one document
 with `cfr_part` referring to title 42 part 412.  It puts these in order based on the `modified_date`, and it outputs the docket ID, the 
 modified date, and the title.
+
+## Notebook: PostgreSQL Docket Ingestion + `cfrPart` Process
+
+See `Postgres_Docket_Ingestion_and_CFRPart_Process.ipynb` for a step-by-step workflow with examples:
+
+- Dry-run and real ingestion commands for one or more docket IDs
+- `cfrPart` normalization examples and status interpretation
+- Post-ingestion SQL quality checks and triage process
