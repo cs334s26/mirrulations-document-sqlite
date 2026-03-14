@@ -6,3 +6,5 @@ old/
 null_field_report.txt
 *.sql-shm
 *.sql-wal
+*.db-shm*
+*.db-wal
