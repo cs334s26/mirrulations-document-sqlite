@@ -42,6 +42,60 @@ into the Documents table.
 python3 insert_documents.py
 ```
 
+## Targeted PostgreSQL Ingestion (One or More Dockets)
+
+For targeted ingestion directly from regulations.gov into PostgreSQL (without downloading the full S3 mirror),
+use `ingest_dockets_postgres.py`.
+
+### 1) Install dependencies
+
+```
+python3 -m pip install -U requests python-dotenv "psycopg[binary]"
+```
+
+(`psycopg2-binary` also works if preferred.)
+
+### 2) Set environment variables
+
+```
+export DATABASE_URL='postgresql://user:password@host:5432/dbname'
+export API_KEY='your-regulations-gov-api-key'
+```
+
+### 3) Ingest one or more dockets
+
+```
+# initialize schema + ingest two docket IDs
+python3 ingest_dockets_postgres.py --init-schema CMS-2025-0304 FDA-2024-N-1234
+```
+
+You can also provide docket IDs via file:
+
+```
+python3 ingest_dockets_postgres.py --init-schema --docket-file docket_ids.txt
+```
+
+### PostgreSQL schema
+
+`documents_schema_postgres.sql` creates the `documents` table and indexes for Postgres.
+It preserves raw `cfr_part` and adds:
+
+- `cfr_part_normalized` (JSONB): normalized references, e.g. title/part pairs.
+- `cfr_part_parse_status`: one of `parsed`, `missing_title`, `unparsed`, `no_cfr`, `empty`.
+
+This allows robust querying while keeping the original raw source text.
+
+## Handling Inconsistent `cfrPart`
+
+`cfrPart` strings are inconsistent in format. The normalization strategy is:
+
+1. **Preserve raw input** (`documents.cfr_part`) unchanged.
+2. **Normalize to structure** using `cfr_part_normalization.py`, which extracts `{title, part}` references from messy values (lists, multiple titles, and simple ranges).
+3. **Track parse quality** in `cfr_part_parse_status` so unresolved formats are easy to triage.
+4. **Iterate parser rules** over only `unparsed`/`missing_title` rows instead of reprocessing everything blindly.
+
+During ingest, `ingest_dockets_postgres.py` prints a status summary and sample unparsed values to guide follow-up cleanup.
+
 
 ## 42 CFR Part Analysis
 
@@ -83,3 +137,11 @@ Part            Count  Agencies
 The Script `list_42_cfr_412_dockets.py` finds all dockets that contain a document that have `document_type` of "Rule" and at least one document
 with `cfr_part` referring to title 42 part 412.  It puts these in order based on the `modified_date`, and it outputs the docket ID, the 
 modified date, and the title.
+
+## Notebook: PostgreSQL Docket Ingestion + `cfrPart` Process
+
+See `Postgres_Docket_Ingestion_and_CFRPart_Process.ipynb` for a step-by-step workflow with examples:
+
+- Dry-run and real ingestion commands for one or more docket IDs
+- `cfrPart` normalization examples and status interpretation
+- Post-ingestion SQL quality checks and triage process
